@@ -280,7 +280,6 @@ const App = () => {
           <div className="flex flex-col md:flex-row justify-between items-center pt-12 border-t border-white/5 gap-6 text-[10px] font-black uppercase tracking-widest text-slate-700">
             <div>Zapopan, Jalisco, México</div>
             <div className="flex items-center gap-2">
-              <span>Construido con React & IA</span>
               <div className="w-1 h-1 rounded-full bg-slate-700" />
               <span>© 2026</span>
             </div>
