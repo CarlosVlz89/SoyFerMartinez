@@ -18,6 +18,9 @@ import {
   Layout
 } from 'lucide-react';
 
+// 1. IMPORTA EL NUEVO COMPONENTE
+import DevDashboard from './assets/DevDashboard.jsx';
+
 /**
  * ARCHIVO: src/App.jsx
  * Marca Personal: SoyFerMartinez
@@ -27,6 +30,9 @@ const App = () => {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [activeTab, setActiveTab] = useState('all');
   const [scrolled, setScrolled] = useState(false);
+  
+  // 2. ESTADO PARA MOSTRAR LA CONSOLA
+  const [showConsole, setShowConsole] = useState(false);
 
   // Manejo de interactividad: Seguimiento de mouse y scroll
   useEffect(() => {
@@ -71,6 +77,12 @@ const App = () => {
     }
   ];
 
+  // 3. RENDERIZADO CONDICIONAL
+  // Si showConsole es true, mostramos solo la consola.
+  if (showConsole) {
+    return <DevDashboard onClose={() => setShowConsole(false)} />;
+  }
+
   return (
     <div className="min-h-screen bg-[#050505] text-slate-300 font-sans selection:bg-indigo-500/30 selection:text-indigo-200 overflow-x-hidden">
       
@@ -93,6 +105,16 @@ const App = () => {
           <div className="hidden md:flex items-center space-x-10 text-[10px] uppercase tracking-[0.2em] font-bold text-slate-400">
             <a href="#proceso" className="hover:text-white transition-colors">Mi Proceso</a>
             <a href="#proyectos" className="hover:text-white transition-colors">Portafolio</a>
+            
+            {/* 4. BOTÓN EN NAV PARA ABRIR CONSOLA */}
+            <button 
+              onClick={() => setShowConsole(true)}
+              className="flex items-center gap-2 border border-indigo-500/30 px-4 py-2 rounded-full text-indigo-400 hover:bg-indigo-500/10 transition-all"
+            >
+              <Terminal size={14} />
+              TERMINAL DEV
+            </button>
+
             <a href="mailto:hola@soyfermartinez.com" className="bg-indigo-600 text-white px-6 py-2.5 rounded-full hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/20 font-bold">
               Contacto
             </a>
@@ -116,10 +138,20 @@ const App = () => {
               Especialista en convertir necesidades comerciales en productos digitales funcionales. Utilizo <span className="text-white font-medium italic">IA y disciplina técnica</span> para acelerar el crecimiento de negocios.
             </p>
             <div className="flex flex-wrap gap-6 items-center">
-              <button className="px-10 py-5 bg-white text-black hover:bg-indigo-500 hover:text-white rounded-2xl font-black transition-all flex items-center gap-3 group">
+              <a href="#proyectos" className="px-10 py-5 bg-white text-black hover:bg-indigo-500 hover:text-white rounded-2xl font-black transition-all flex items-center gap-3 group">
                 VER PROYECTOS
                 <ChevronRight size={20} className="group-hover:translate-x-1 transition-transform" />
+              </a>
+
+              {/* 5. BOTÓN EN HERO PARA ABRIR CONSOLA */}
+              <button 
+                onClick={() => setShowConsole(true)}
+                className="px-8 py-5 border border-white/10 rounded-2xl hover:bg-white/5 transition-all flex items-center gap-3 group"
+              >
+                <Terminal size={20} className="text-indigo-500 group-hover:scale-110 transition-transform" />
+                <span className="font-bold text-sm tracking-widest">EJECUTAR CONSOLA</span>
               </button>
+
               <div className="flex items-center gap-8 px-8 border-l border-white/10">
                 <Linkedin size={24} className="text-slate-500 hover:text-white cursor-pointer transition-colors" />
                 <Github size={24} className="text-slate-500 hover:text-white cursor-pointer transition-colors" />
