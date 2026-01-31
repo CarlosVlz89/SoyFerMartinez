@@ -1,16 +1,16 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
+import { BrowserRouter } from 'react-router-dom'
 import App from './App.jsx'
 
-/**
- * ARCHIVO: src/main.jsx
- * Este es el punto de entrada de tu aplicación.
- * Su única función es tomar el componente principal (App) 
- * y renderizarlo en el archivo index.html.
- */
+// IMPORTANTE: Aquí corregimos la ruta del CSS que moviste
+import './styles/index.css' 
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <App />
+    {/* Agregamos el basename con el nombre EXACTO de tu repo */}
+    <BrowserRouter basename="/SoyFerMartinez">
+      <App />
+    </BrowserRouter>
   </React.StrictMode>,
 )
