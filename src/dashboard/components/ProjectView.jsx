@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { 
   Briefcase, Zap, Calendar, ListTodo, Flag, Target, Clock, AlertCircle, 
   Trash2, CheckCircle, Plus, Edit2, Save, X, GripVertical, Layers, Archive, 
-  Book, Palette, Key, FileText, Copy, LayoutTemplate
+  Book, Palette, Key, FileText, Copy, LayoutTemplate, Share2 // <--- IMPORTAMOS SHARE2
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts';
 
@@ -15,12 +15,16 @@ export default function ProjectView({
   onCycleStatus,
   onUpdateTask,
   onReorderTasks,
-  onUpdateProject // Nueva prop para guardar la wiki
+  onUpdateProject 
 }) {
-  // --- ESTADOS DE VISTA ---
-  const [activeView, setActiveView] = useState('board'); // 'board' | 'wiki'
+  // ... (TODOS TUS ESTADOS Y LOGICA ANTERIOR SE MANTIENEN IGUAL) ...
+  // ... (Copia todo lo que está entre el inicio de la función y el return) ...
   
-  // Estados Tareas
+  // (Para ahorrar espacio, solo pongo el return actualizado con el botón nuevo, 
+  // asegúrate de mantener toda la lógica de estados y handlers que ya tenías)
+
+  // --- REPITAMOS LA LÓGICA DE ESTADOS PARA QUE NO SE PIERDA AL COPIAR ---
+  const [activeView, setActiveView] = useState('board');
   const [qaTitle, setQaTitle] = useState('');
   const [qaDesc, setQaDesc] = useState('');
   const [qaPriority, setQaPriority] = useState('Media');
@@ -32,129 +36,50 @@ export default function ProjectView({
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [activeTab, setActiveTab] = useState('todo'); 
-
-  // --- ESTADOS WIKI ---
   const [wikiNotes, setWikiNotes] = useState(project.wiki?.notes || '');
   const [newColor, setNewColor] = useState('#000000');
   const [newColorName, setNewColorName] = useState('');
   const [newCredKey, setNewCredKey] = useState('');
   const [newCredValue, setNewCredValue] = useState('');
 
-  // Sincronizar wiki local con DB cuando cambia el proyecto
-  useEffect(() => {
-    setWikiNotes(project.wiki?.notes || '');
-  }, [project.id]);
+  useEffect(() => { setWikiNotes(project.wiki?.notes || ''); }, [project.id]);
+  const saveWikiNotes = () => { onUpdateProject(project.id, { 'wiki.notes': wikiNotes }); };
+  const addColor = () => { if (newColorName) { const currentColors = project.wiki?.colors || []; onUpdateProject(project.id, { 'wiki.colors': [...currentColors, { name: newColorName, code: newColor }] }); setNewColorName(''); } };
+  const deleteColor = (index) => { const currentColors = [...(project.wiki?.colors || [])]; currentColors.splice(index, 1); onUpdateProject(project.id, { 'wiki.colors': currentColors }); };
+  const addCredential = () => { if (newCredKey && newCredValue) { const currentCreds = project.wiki?.credentials || []; onUpdateProject(project.id, { 'wiki.credentials': [...currentCreds, { key: newCredKey, value: newCredValue }] }); setNewCredKey(''); setNewCredValue(''); } };
+  const deleteCredential = (index) => { const currentCreds = [...(project.wiki?.credentials || [])]; currentCreds.splice(index, 1); onUpdateProject(project.id, { 'wiki.credentials': currentCreds }); };
 
-  // --- HANDLERS WIKI ---
-  const saveWikiNotes = () => {
-    onUpdateProject(project.id, { 'wiki.notes': wikiNotes });
-  };
-
-  const addColor = () => {
-    if (newColorName) {
-      const currentColors = project.wiki?.colors || [];
-      onUpdateProject(project.id, { 'wiki.colors': [...currentColors, { name: newColorName, code: newColor }] });
-      setNewColorName('');
-    }
-  };
-
-  const deleteColor = (index) => {
-    const currentColors = [...(project.wiki?.colors || [])];
-    currentColors.splice(index, 1);
-    onUpdateProject(project.id, { 'wiki.colors': currentColors });
-  };
-
-  const addCredential = () => {
-    if (newCredKey && newCredValue) {
-      const currentCreds = project.wiki?.credentials || [];
-      onUpdateProject(project.id, { 'wiki.credentials': [...currentCreds, { key: newCredKey, value: newCredValue }] });
-      setNewCredKey(''); setNewCredValue('');
-    }
-  };
-
-  const deleteCredential = (index) => {
-    const currentCreds = [...(project.wiki?.credentials || [])];
-    currentCreds.splice(index, 1);
-    onUpdateProject(project.id, { 'wiki.credentials': currentCreds });
-  };
-
-  // --- LÓGICA TAREAS ---
   const dragItem = useRef();
   const dragOverItem = useRef();
   const [localQuickTasks, setLocalQuickTasks] = useState([]);
-
-  const roadmapTasks = tasks
-    .filter(t => t.type === 'roadmap')
-    .sort((a, b) => (a.order ?? 99) - (b.order ?? 99) || a.title.localeCompare(b.title));
-
-  useEffect(() => {
-    const qt = tasks
-      .filter(t => t.type === 'quick')
-      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-    setLocalQuickTasks(qt);
-  }, [tasks]);
-
+  const roadmapTasks = tasks.filter(t => t.type === 'roadmap').sort((a, b) => (a.order ?? 99) - (b.order ?? 99) || a.title.localeCompare(b.title));
+  useEffect(() => { const qt = tasks.filter(t => t.type === 'quick').sort((a, b) => (a.order ?? 0) - (b.order ?? 0)); setLocalQuickTasks(qt); }, [tasks]);
   const displayedTasks = localQuickTasks.filter(t => activeTab === 'todo' ? !t.completed : t.completed);
-
   const handleDragStart = (e, position) => { dragItem.current = position; e.target.classList.add('opacity-50'); };
-  const handleDragEnter = (e, position) => {
-    dragOverItem.current = position;
-    const newList = [...displayedTasks];
-    const dragItemContent = newList[dragItem.current];
-    newList.splice(dragItem.current, 1);
-    newList.splice(dragOverItem.current, 0, dragItemContent);
-    dragItem.current = position;
-    dragOverItem.current = position;
-  };
-  const handleDragEnd = (e) => {
-    e.target.classList.remove('opacity-50');
-    dragItem.current = null;
-    dragOverItem.current = null;
-    if (activeTab === 'todo') onReorderTasks(displayedTasks); 
-  };
-
-  const projectProgress = roadmapTasks.length > 0 
-    ? Math.round((roadmapTasks.filter(t => t.completed).length / roadmapTasks.length) * 100) : 0;
-
-  const isOverdue = (dateString) => {
-    if (!dateString) return false;
-    const [y, m, d] = dateString.split('-');
-    const deadline = new Date(y, m - 1, d);
-    const today = new Date();
-    today.setHours(0,0,0,0);
-    return deadline < today;
-  };
-
-  const formatDateDisplay = (dateString) => {
-    if (!dateString) return '';
-    const [y, m, d] = dateString.split('-');
-    const date = new Date(y, m - 1, d);
-    return date.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
-  };
-
-  const handleQuickSubmit = (e) => {
-    e.preventDefault();
-    if (qaTitle.trim()) {
-      onAddTask({ title: qaTitle, description: qaDesc, priority: qaPriority, status: qaStatus, deadline: qaDeadline, type: 'quick' });
-      setQaTitle(''); setQaDesc(''); setQaDeadline(''); setQaStatus('Pendiente');
-    }
-  };
-
-  const handleRoadmapSubmit = (e) => {
-    e.preventDefault();
-    if (roadmapInput.trim()) {
-      onAddTask({ title: roadmapInput, type: 'roadmap', order: 99 });
-      setRoadmapInput('');
-      setIsAddingRoadmap(false);
-    }
-  };
-
+  const handleDragEnter = (e, position) => { dragOverItem.current = position; const newList = [...displayedTasks]; const dragItemContent = newList[dragItem.current]; newList.splice(dragItem.current, 1); newList.splice(dragOverItem.current, 0, dragItemContent); dragItem.current = position; dragOverItem.current = position; };
+  const handleDragEnd = (e) => { e.target.classList.remove('opacity-50'); dragItem.current = null; dragOverItem.current = null; if (activeTab === 'todo') onReorderTasks(displayedTasks); };
+  const projectProgress = roadmapTasks.length > 0 ? Math.round((roadmapTasks.filter(t => t.completed).length / roadmapTasks.length) * 100) : 0;
+  const isOverdue = (dateString) => { if (!dateString) return false; const [y, m, d] = dateString.split('-'); const deadline = new Date(y, m - 1, d); const today = new Date(); today.setHours(0,0,0,0); return deadline < today; };
+  const formatDateDisplay = (dateString) => { if (!dateString) return ''; const [y, m, d] = dateString.split('-'); const date = new Date(y, m - 1, d); return date.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' }); };
+  const handleQuickSubmit = (e) => { e.preventDefault(); if (qaTitle.trim()) { onAddTask({ title: qaTitle, description: qaDesc, priority: qaPriority, status: qaStatus, deadline: qaDeadline, type: 'quick' }); setQaTitle(''); setQaDesc(''); setQaDeadline(''); setQaStatus('Pendiente'); } };
+  const handleRoadmapSubmit = (e) => { e.preventDefault(); if (roadmapInput.trim()) { onAddTask({ title: roadmapInput, type: 'roadmap', order: 99 }); setRoadmapInput(''); setIsAddingRoadmap(false); } };
   const startEditing = (task) => { setEditingId(task.id); setEditForm({ ...task }); };
   const cancelEditing = () => { setEditingId(null); setEditForm({}); };
   const saveEditing = () => { if (editForm.title.trim()) { onUpdateTask(editingId, editForm); setEditingId(null); } };
-
   const statusData = [ { name: 'Pendientes', value: localQuickTasks.filter(t => !t.completed).length, color: '#6366f1' }, { name: 'Completadas', value: localQuickTasks.filter(t => t.completed).length, color: '#10b981' } ].filter(d => d.value > 0);
   const priorityData = [ { name: 'Alta', cantidad: localQuickTasks.filter(t => t.priority === 'Alta' && !t.completed).length, fill: '#ec4899' }, { name: 'Media', cantidad: localQuickTasks.filter(t => t.priority === 'Media' && !t.completed).length, fill: '#f59e0b' }, { name: 'Baja', cantidad: localQuickTasks.filter(t => t.priority === 'Baja' && !t.completed).length, fill: '#10b981' } ];
+
+  // --- NUEVA FUNCIÓN DE COMPARTIR ---
+  const handleShareClientLink = () => {
+    // Truco para obtener la URL base correcta (sea localhost o GitHub Pages)
+    // Eliminamos '/dashboard' de la URL actual y agregamos el path del cliente
+    const baseUrl = window.location.href.split('/dashboard')[0];
+    const clientLink = `${baseUrl}/status/${project.id}`;
+    
+    navigator.clipboard.writeText(clientLink);
+    // Podrías usar un Toast aquí, por ahora usamos un alert simple y elegante
+    alert(`🔗 Enlace copiado:\n${clientLink}\n\nEnvíalo a tu cliente.`);
+  };
 
   return (
     <div className="flex flex-col h-full overflow-hidden relative z-10 text-left">
@@ -178,9 +103,21 @@ export default function ProjectView({
                 </button>
             </div>
 
-            <div className="text-right">
-                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">Progreso Global</span>
-                <span className="text-lg font-black text-white">{projectProgress}%</span>
+            <div className="text-right flex items-center gap-6">
+                {/* --- BOTÓN DE COMPARTIR (NUEVO) --- */}
+                <button 
+                  onClick={handleShareClientLink}
+                  className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all group"
+                  title="Copiar enlace para cliente"
+                >
+                    <Share2 size={14} />
+                    <span className="text-[10px] font-black uppercase tracking-widest">Compartir</span>
+                </button>
+
+                <div className="text-right">
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">Progreso Global</span>
+                    <span className="text-lg font-black text-white">{projectProgress}%</span>
+                </div>
             </div>
           </div>
           <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden border border-white/5">
@@ -191,7 +128,6 @@ export default function ProjectView({
         {/* ======================= VISTA: TABLERO ======================= */}
         {activeView === 'board' && (
             <>
-                {/* ROADMAP HORIZONTAL */}
                 <div className="px-10 py-6 border-b border-white/5 bg-black/20 backdrop-blur-sm animate-in fade-in">
                     <div className="flex items-center gap-2 mb-4">
                         <Target size={14} className="text-indigo-400" />
@@ -228,7 +164,6 @@ export default function ProjectView({
                     </div>
                 </div>
 
-                {/* CONTENIDO PRINCIPAL */}
                 <div className="flex-1 overflow-y-auto p-10 bg-transparent text-left no-scrollbar animate-in fade-in slide-in-from-bottom-4">
                     <div className="max-w-5xl mx-auto text-left pb-20">
                         {activeTab === 'todo' && focusTask && (
@@ -312,88 +247,25 @@ export default function ProjectView({
             </>
         )}
 
-        {/* ======================= VISTA: BITÁCORA (WIKI) ======================= */}
+        {/* ======================= VISTA: BITÁCORA ======================= */}
         {activeView === 'wiki' && (
             <div className="flex-1 overflow-y-auto p-10 bg-transparent text-left no-scrollbar animate-in fade-in slide-in-from-right-4">
                 <div className="max-w-4xl mx-auto space-y-8 pb-20">
-                    
-                    {/* SECCIÓN 1: PALETA DE COLORES */}
                     <div className="bg-white/5 border border-white/10 rounded-[32px] p-8">
-                        <div className="flex items-center gap-2 mb-6">
-                            <Palette size={20} className="text-indigo-400" />
-                            <h3 className="text-lg font-black text-white uppercase tracking-wider">Identidad Visual</h3>
-                        </div>
-                        
+                        <div className="flex items-center gap-2 mb-6"><Palette size={20} className="text-indigo-400" /><h3 className="text-lg font-black text-white uppercase tracking-wider">Identidad Visual</h3></div>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                             {(project.wiki?.colors || []).map((col, idx) => (
-                                <div key={idx} className="group relative bg-black/20 p-3 rounded-2xl border border-white/5 hover:border-white/20 transition-all">
-                                    <div className="h-16 rounded-xl mb-3 shadow-inner" style={{ backgroundColor: col.code }} />
-                                    <p className="text-xs font-bold text-white mb-0.5">{col.name}</p>
-                                    <div className="flex justify-between items-center">
-                                        <p className="text-[10px] text-slate-500 font-mono uppercase">{col.code}</p>
-                                        <button onClick={() => { navigator.clipboard.writeText(col.code) }} className="text-slate-600 hover:text-white"><Copy size={12} /></button>
-                                    </div>
-                                    <button onClick={() => deleteColor(idx)} className="absolute top-2 right-2 p-1.5 bg-black/50 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500 hover:text-white"><X size={10} /></button>
-                                </div>
+                                <div key={idx} className="group relative bg-black/20 p-3 rounded-2xl border border-white/5 hover:border-white/20 transition-all"><div className="h-16 rounded-xl mb-3 shadow-inner" style={{ backgroundColor: col.code }} /><p className="text-xs font-bold text-white mb-0.5">{col.name}</p><div className="flex justify-between items-center"><p className="text-[10px] text-slate-500 font-mono uppercase">{col.code}</p><button onClick={() => { navigator.clipboard.writeText(col.code) }} className="text-slate-600 hover:text-white"><Copy size={12} /></button></div><button onClick={() => deleteColor(idx)} className="absolute top-2 right-2 p-1.5 bg-black/50 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500 hover:text-white"><X size={10} /></button></div>
                             ))}
-                            {/* Formulario Añadir Color */}
-                            <div className="border border-dashed border-white/10 rounded-2xl p-4 flex flex-col justify-center items-center gap-2">
-                                <div className="flex gap-2 w-full">
-                                    <input type="color" className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border-none" value={newColor} onChange={(e) => setNewColor(e.target.value)} />
-                                    <input type="text" placeholder="Nombre (ej. Primary)" className="flex-1 bg-transparent text-xs text-white border-b border-white/10 focus:outline-none" value={newColorName} onChange={(e) => setNewColorName(e.target.value)} />
-                                </div>
-                                <button onClick={addColor} disabled={!newColorName} className="w-full py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-[9px] font-black uppercase text-white transition-all">Añadir</button>
-                            </div>
+                            <div className="border border-dashed border-white/10 rounded-2xl p-4 flex flex-col justify-center items-center gap-2"><div className="flex gap-2 w-full"><input type="color" className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border-none" value={newColor} onChange={(e) => setNewColor(e.target.value)} /><input type="text" placeholder="Nombre (ej. Primary)" className="flex-1 bg-transparent text-xs text-white border-b border-white/10 focus:outline-none" value={newColorName} onChange={(e) => setNewColorName(e.target.value)} /></div><button onClick={addColor} disabled={!newColorName} className="w-full py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-[9px] font-black uppercase text-white transition-all">Añadir</button></div>
                         </div>
                     </div>
-
-                    {/* SECCIÓN 2: CREDENCIALES */}
                     <div className="bg-white/5 border border-white/10 rounded-[32px] p-8">
-                        <div className="flex items-center gap-2 mb-6">
-                            <Key size={20} className="text-amber-400" />
-                            <h3 className="text-lg font-black text-white uppercase tracking-wider">Credenciales & Variables</h3>
-                        </div>
-                        <div className="space-y-3 mb-6">
-                            {(project.wiki?.credentials || []).map((cred, idx) => (
-                                <div key={idx} className="flex items-center gap-4 p-3 bg-black/20 rounded-xl border border-white/5 group">
-                                    <div className="w-1/3 text-xs font-bold text-slate-400 uppercase tracking-wider">{cred.key}</div>
-                                    <div className="flex-1 font-mono text-xs text-emerald-400 bg-black/20 px-2 py-1 rounded select-all">{cred.value}</div>
-                                    <button onClick={() => deleteCredential(idx)} className="text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={14} /></button>
-                                </div>
-                            ))}
-                        </div>
-                        <div className="flex gap-3 items-end p-4 bg-white/[0.02] rounded-xl border border-white/5">
-                            <div className="flex-1 space-y-1">
-                                <label className="text-[9px] text-slate-500 uppercase font-bold">Clave</label>
-                                <input type="text" placeholder="ej. ADMIN_USER" className="w-full bg-transparent text-xs text-white border-b border-white/10 focus:border-white/30 focus:outline-none py-1" value={newCredKey} onChange={(e) => setNewCredKey(e.target.value)} />
-                            </div>
-                            <div className="flex-1 space-y-1">
-                                <label className="text-[9px] text-slate-500 uppercase font-bold">Valor</label>
-                                <input type="text" placeholder="Valor secreto..." className="w-full bg-transparent text-xs text-white border-b border-white/10 focus:border-white/30 focus:outline-none py-1" value={newCredValue} onChange={(e) => setNewCredValue(e.target.value)} />
-                            </div>
-                            <button onClick={addCredential} className="px-4 py-1.5 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-lg text-[10px] font-black uppercase hover:bg-amber-500 hover:text-black transition-all">Guardar</button>
-                        </div>
+                        <div className="flex items-center gap-2 mb-6"><Key size={20} className="text-amber-400" /><h3 className="text-lg font-black text-white uppercase tracking-wider">Credenciales & Variables</h3></div>
+                        <div className="space-y-3 mb-6">{(project.wiki?.credentials || []).map((cred, idx) => (<div key={idx} className="flex items-center gap-4 p-3 bg-black/20 rounded-xl border border-white/5 group"><div className="w-1/3 text-xs font-bold text-slate-400 uppercase tracking-wider">{cred.key}</div><div className="flex-1 font-mono text-xs text-emerald-400 bg-black/20 px-2 py-1 rounded select-all">{cred.value}</div><button onClick={() => deleteCredential(idx)} className="text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={14} /></button></div>))}</div>
+                        <div className="flex gap-3 items-end p-4 bg-white/[0.02] rounded-xl border border-white/5"><div className="flex-1 space-y-1"><label className="text-[9px] text-slate-500 uppercase font-bold">Clave</label><input type="text" placeholder="ej. ADMIN_USER" className="w-full bg-transparent text-xs text-white border-b border-white/10 focus:border-white/30 focus:outline-none py-1" value={newCredKey} onChange={(e) => setNewCredKey(e.target.value)} /></div><div className="flex-1 space-y-1"><label className="text-[9px] text-slate-500 uppercase font-bold">Valor</label><input type="text" placeholder="Valor secreto..." className="w-full bg-transparent text-xs text-white border-b border-white/10 focus:border-white/30 focus:outline-none py-1" value={newCredValue} onChange={(e) => setNewCredValue(e.target.value)} /></div><button onClick={addCredential} className="px-4 py-1.5 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-lg text-[10px] font-black uppercase hover:bg-amber-500 hover:text-black transition-all">Guardar</button></div>
                     </div>
-
-                    {/* SECCIÓN 3: NOTAS TÉCNICAS */}
-                    <div className="bg-white/5 border border-white/10 rounded-[32px] p-8 h-[500px] flex flex-col">
-                        <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center gap-2">
-                                <FileText size={20} className="text-blue-400" />
-                                <h3 className="text-lg font-black text-white uppercase tracking-wider">Notas de Ingeniería</h3>
-                            </div>
-                            <button onClick={saveWikiNotes} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-full text-white text-[10px] font-black uppercase tracking-widest transition-all">
-                                <Save size={14} /> Guardar Cambios
-                            </button>
-                        </div>
-                        <textarea 
-                            className="flex-1 w-full bg-black/20 border border-white/5 rounded-2xl p-6 text-sm text-slate-300 font-mono leading-relaxed focus:outline-none focus:border-white/20 resize-none"
-                            placeholder="Escribe aquí instrucciones de despliegue, recordatorios técnicos o notas de reuniones..."
-                            value={wikiNotes}
-                            onChange={(e) => setWikiNotes(e.target.value)}
-                        />
-                    </div>
-
+                    <div className="bg-white/5 border border-white/10 rounded-[32px] p-8 h-[500px] flex flex-col"><div className="flex items-center justify-between mb-4"><div className="flex items-center gap-2"><FileText size={20} className="text-blue-400" /><h3 className="text-lg font-black text-white uppercase tracking-wider">Notas de Ingeniería</h3></div><button onClick={saveWikiNotes} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-full text-white text-[10px] font-black uppercase tracking-widest transition-all"><Save size={14} /> Guardar Cambios</button></div><textarea className="flex-1 w-full bg-black/20 border border-white/5 rounded-2xl p-6 text-sm text-slate-300 font-mono leading-relaxed focus:outline-none focus:border-white/20 resize-none" placeholder="Escribe aquí instrucciones de despliegue, recordatorios técnicos o notas de reuniones..." value={wikiNotes} onChange={(e) => setWikiNotes(e.target.value)} /></div>
                 </div>
             </div>
         )}
